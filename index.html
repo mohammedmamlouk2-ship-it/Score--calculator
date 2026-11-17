@@ -1,0 +1,966 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b0f14">
+<meta name="color-scheme" content="dark light">
+<title>ED Bedside Calculator</title>
+<style>
+:root{
+  --bg:#0b0f14;--card:#141a22;--card2:#1b232d;--line:#2a3542;--tx:#eef2f6;--mu:#9aa8b6;
+  --acc:#4ea8ff;--g:#22c55e;--a:#f5a524;--r:#f04444;--i:#38bdf8;--n:#6b7785;
+  --gbg:#0f2d1b;--abg:#33240a;--rbg:#3a1414;--ibg:#0c2837;--nbg:#1b232d;
+}
+:root[data-theme="light"]{
+  --bg:#f3f5f8;--card:#ffffff;--card2:#eef1f5;--line:#cfd6de;--tx:#0e141b;--mu:#4b5866;
+  --acc:#0b62c4;--g:#15803d;--a:#b45309;--r:#c81e1e;--i:#0369a1;--n:#5b6673;
+  --gbg:#dcf5e5;--abg:#fdf0d5;--rbg:#fde2e2;--ibg:#dbeffa;--nbg:#e8ecf1;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--tx)}
+body{font:16px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;overflow-x:hidden;min-height:100vh}
+button{font:inherit;color:inherit}
+.wrap{max-width:720px;margin:0 auto;padding:0 12px}
+header.top{position:sticky;top:0;z-index:20;background:var(--bg);border-bottom:1px solid var(--line);padding:calc(8px + env(safe-area-inset-top)) 0 8px}
+.row{display:flex;align-items:center;gap:8px}
+.brand{font-weight:800;font-size:19px;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.brand small{color:var(--mu);font-weight:600;font-size:12px;display:block}
+.seg{display:flex;border:1px solid var(--line);border-radius:12px;overflow:hidden;flex-shrink:0}
+.seg button{min-height:44px;min-width:52px;padding:0 10px;background:var(--card);border:0;font-weight:700;font-size:14px;color:var(--mu)}
+.seg button[aria-pressed="true"]{background:var(--acc);color:#fff}
+.icbtn{min-height:44px;min-width:44px;border-radius:12px;border:1px solid var(--line);background:var(--card);font-size:18px;font-weight:700;padding:0 10px;flex-shrink:0}
+.search{width:100%;margin-top:8px;min-height:48px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--tx);font-size:17px;padding:0 14px}
+.search:focus,.num input:focus{outline:2px solid var(--acc);outline-offset:1px}
+.tabs{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.tabs button{min-height:44px;padding:0 12px;border-radius:22px;border:1px solid var(--line);background:var(--card);font-weight:600;font-size:14px;color:var(--mu)}
+.tabs button[aria-pressed="true"]{background:var(--acc);border-color:var(--acc);color:#fff}
+.list{list-style:none;margin:10px 0;padding:0;display:grid;gap:8px}
+.list button{width:100%;text-align:left;min-height:64px;padding:12px 14px;border-radius:14px;border:1px solid var(--line);background:var(--card);display:flex;align-items:center;gap:10px}
+.list button:active{background:var(--card2)}
+.list .nm{font-weight:700;font-size:17px}
+.list .ds{color:var(--mu);font-size:14px;margin-top:2px}
+.list .ct{margin-left:auto;font-size:11px;color:var(--mu);border:1px solid var(--line);border-radius:8px;padding:2px 6px;white-space:nowrap;flex-shrink:0}
+.empty{color:var(--mu);text-align:center;padding:30px 0}
+/* calculator view */
+.chead{display:flex;align-items:center;gap:8px}
+.chead h1{font-size:18px;margin:0;flex:1;min-width:0;line-height:1.2}
+.reset{color:var(--r);border-color:var(--r)}
+.fields{display:grid;gap:8px;margin:12px 0}
+.hdr{font-size:13px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--acc);margin:10px 2px 0}
+.tog{width:100%;min-height:56px;display:flex;align-items:center;gap:12px;text-align:left;padding:10px 12px;border-radius:14px;border:1px solid var(--line);background:var(--card)}
+.tog .tl{flex:1;min-width:0}
+.tog .tl b{font-weight:600;display:block}
+.tog .tl span{display:block;color:var(--mu);font-size:13px;margin-top:2px}
+.tog .pt{font-weight:800;font-size:14px;color:var(--mu);min-width:34px;text-align:right}
+.tog .sw{width:46px;height:28px;border-radius:14px;background:var(--line);position:relative;flex-shrink:0;transition:background .15s}
+.tog .sw::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:left .15s}
+.tog[aria-pressed="true"]{border-color:var(--acc);background:color-mix(in srgb,var(--acc) 16%,var(--card))}
+.tog[aria-pressed="true"] .sw{background:var(--acc)}
+.tog[aria-pressed="true"] .sw::after{left:21px}
+.tog[aria-pressed="true"] .pt{color:var(--tx)}
+.sel{border:1px solid var(--line);border-radius:14px;background:var(--card);padding:10px}
+.sel .sl{font-weight:700}
+.sel .ss{color:var(--mu);font-size:13px;margin-top:2px}
+.opts{display:grid;gap:6px;margin-top:8px}
+.opts.grid{grid-template-columns:repeat(auto-fit,minmax(88px,1fr))}
+.opts button{min-height:48px;padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:var(--card2);text-align:left;display:flex;align-items:center;gap:8px}
+.opts.grid button{justify-content:center;text-align:center}
+.opts button .op{margin-left:auto;font-weight:800;color:var(--mu);font-size:13px;flex-shrink:0}
+.opts.grid button .op{margin-left:6px}
+.opts button[aria-pressed="true"]{background:var(--acc);border-color:var(--acc);color:#fff}
+.opts button[aria-pressed="true"] .op{color:#fff}
+.num{border:1px solid var(--line);border-radius:14px;background:var(--card);padding:10px 12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.num label{flex:1 1 150px;font-weight:600}
+.num label span{display:block;color:var(--mu);font-size:13px;font-weight:400}
+.num .ib{display:flex;align-items:center;gap:6px;flex:0 1 auto}
+.num input{width:110px;min-height:48px;border-radius:10px;border:1px solid var(--line);background:var(--card2);color:var(--tx);font-size:20px;font-weight:700;padding:0 10px;text-align:right}
+.num .un{color:var(--mu);font-size:14px;min-width:46px}
+.hide{display:none!important}
+/* result */
+.rbar{position:fixed;left:0;right:0;bottom:0;z-index:30;padding:0 8px calc(8px + env(safe-area-inset-bottom))}
+.rbar .in{max-width:704px;margin:0 auto;border-radius:16px;border:2px solid var(--n);background:var(--nbg);display:flex;align-items:center;gap:12px;padding:10px 14px;min-height:72px;width:100%;text-align:left;box-shadow:0 -6px 24px rgba(0,0,0,.35)}
+.rbar .sc{font-size:34px;font-weight:900;line-height:1;min-width:56px;text-align:center}
+.rbar .sc small{font-size:14px;font-weight:700;opacity:.75}
+.rbar .lb{flex:1;min-width:0}
+.rbar .lb b{display:block;font-size:16px}
+.rbar .lb span{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:13px;color:var(--tx);opacity:.9}
+.rbar .chev{font-size:20px;opacity:.7}
+.t-g{border-color:var(--g)!important;background:var(--gbg)!important}.t-g .sc,.t-g .tt{color:var(--g)}
+.t-a{border-color:var(--a)!important;background:var(--abg)!important}.t-a .sc,.t-a .tt{color:var(--a)}
+.t-r{border-color:var(--r)!important;background:var(--rbg)!important}.t-r .sc,.t-r .tt{color:var(--r)}
+.t-i{border-color:var(--i)!important;background:var(--ibg)!important}.t-i .sc,.t-i .tt{color:var(--i)}
+.t-n{border-color:var(--n)!important;background:var(--nbg)!important}.t-n .sc,.t-n .tt{color:var(--mu)}
+.detail{border:2px solid var(--n);border-radius:16px;padding:14px;margin-top:6px;scroll-margin-top:90px}
+.detail .tt{font-size:22px;font-weight:900;margin:0 0 6px}
+.detail p{margin:6px 0}
+.detail .nx{margin-top:10px;padding:10px 12px;border-radius:10px;background:var(--card);border:1px solid var(--line)}
+.detail .nx b{color:var(--acc)}
+.detail table{width:100%;border-collapse:collapse;margin-top:8px;font-size:14px;table-layout:fixed}
+.detail th,.detail td{border-bottom:1px solid var(--line);padding:7px 4px;text-align:left;vertical-align:top;word-wrap:break-word}
+.detail th{color:var(--mu);font-weight:700;font-size:12px;text-transform:uppercase}
+.kv{display:grid;grid-template-columns:1fr auto;gap:4px 12px;margin-top:8px;font-size:15px}
+.kv div:nth-child(even){font-weight:800;text-align:right}
+.box{border:1px solid var(--line);border-radius:14px;background:var(--card);padding:12px 14px;margin-top:10px}
+.box h2{font-size:14px;text-transform:uppercase;letter-spacing:.06em;margin:0 0 6px;color:var(--a)}
+.box.ref h2{color:var(--mu)}
+.box ul{margin:0;padding-left:18px}
+.box li{margin:4px 0}
+.box p{margin:0;font-size:14px;color:var(--mu)}
+footer{color:var(--mu);font-size:13px;text-align:center;padding:18px 12px 24px;border-top:1px solid var(--line);margin-top:16px}
+footer b{color:var(--tx)}
+body.calc footer{padding-bottom:120px}
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+"use strict";
+/* ============================================================
+   ED Bedside Calculator — single file, offline, no storage.
+   Inputs live only in page memory and vanish on reload.
+   ============================================================ */
+
+let UNIT = 'si';            // 'si' | 'conv'
+const STATE = {};           // in-memory only, per calculator
+
+const CATS = [
+  ['all','All'],['chest','Chest Pain/PE'],['neuro','Neuro/Trauma'],['sepsis','Sepsis/Infection'],
+  ['peds','Peds'],['cardio','Cardio/AC'],['msk','MSK'],['labs','Labs/Formulas']
+];
+
+/* ---------- field builders ---------- */
+const T   = (id,l,p,sub)=>({t:'tog',id,l,p,sub});           // points toggle
+const R   = (id,l,sub)=>({t:'tog',id,l,sub});               // rule criterion (no points)
+const SEL = (id,l,o,sub,x)=>Object.assign({t:'sel',id,l,o,sub},x||{});
+const NUM = (id,l,u,x)=>Object.assign({t:'num',id,l,u},x||{});
+const H   = (l,x)=>Object.assign({t:'hdr',l},x||{});
+
+/* unit factors: conventional = SI × f */
+const U = {
+  glu:{u:{si:'mmol/L',conv:'mg/dL'},f:18.016,dp:{si:1,conv:0}},
+  ca:{u:{si:'mmol/L',conv:'mg/dL'},f:4.008,dp:{si:2,conv:1}},
+  alb:{u:{si:'g/L',conv:'g/dL'},f:0.1,dp:{si:0,conv:1}},
+  lyte:{u:{si:'mmol/L',conv:'mEq/L'}},
+  kpa:{u:{si:'kPa',conv:'mmHg'},f:7.50062,dp:{si:2,conv:0}}
+};
+const KPA = 7.50062;
+
+const fmt = (x,d=1)=> (x===null||x===undefined||isNaN(x)) ? '—' : (Math.round(x*Math.pow(10,d))/Math.pow(10,d)).toString().replace('-','−');
+const fmtP = x => (x>0?'+':'') + String(x).replace('-','−');
+const ul = a => '<ul>'+a.map(x=>'<li>'+x+'</li>').join('')+'</ul>';
+
+/* ============================================================
+   CALCULATORS
+   calc(c) returns {score, of, tier:'g|a|r|i|n', label, interp, next, extra}
+   ============================================================ */
+const CALCS = [
+
+/* ---------------- CHEST PAIN / VTE ---------------- */
+{id:'heart',name:'HEART Score',cat:'chest',desc:'6-week MACE risk in ED chest pain',kw:'acs mace troponin chest pain pathway',
+fields:[
+  SEL('h','History',[['Slightly suspicious',0],['Moderately suspicious',1],['Highly suspicious',2]],'Typical features: retrosternal pressure, exertional, radiation to arm/jaw, diaphoresis, nausea, relief with nitrates/rest'),
+  SEL('e','ECG',[['Normal',0],['Non-specific repolarization disturbance',1],['Significant ST deviation',2]],'1 = LBBB, LVH, paced rhythm, digoxin effect, repolarization abnormality · 2 = ST depression/elevation not explained by LBBB/LVH/digoxin'),
+  SEL('a','Age',[['<45',0],['45–64',1],['≥65',2]]),
+  SEL('r','Risk factors',[['None known',0],['1–2 risk factors',1],['≥3, or known atherosclerotic disease',2]],'HTN, hypercholesterolaemia, DM, obesity (BMI >30), smoking (current or quit ≤3 mo), family history of premature CVD. Atherosclerotic disease = prior MI, PCI/CABG, stroke/TIA, PAD'),
+  SEL('t','Initial troponin',[['≤ normal limit',0],['1–3× normal limit',1],['>3× normal limit',2]],'Use the local assay\'s 99th-percentile URL')
+],
+calc(c){
+  if(!c.all()) return c.inc('Answer all 5 items');
+  const s=c.pts();
+  if(s<=3) return {score:s,of:10,tier:'g',label:'Low risk (0–3)',interp:'6-week MACE ≈ 0.9–1.7%.',next:'If serial troponins are negative (HEART Pathway: 0 h and 3 h), consider <b>discharge with outpatient follow-up</b> and no routine inpatient testing.'};
+  if(s<=6) return {score:s,of:10,tier:'a',label:'Moderate risk (4–6)',interp:'6-week MACE ≈ 12–16.6%.',next:'<b>Admit / observe</b>: serial troponins, cardiology input, consider non-invasive ischaemia testing or CT coronary angiography.'};
+  return {score:s,of:10,tier:'r',label:'High risk (7–10)',interp:'6-week MACE ≈ 50–65%.',next:'<b>Treat as ACS</b>: antiplatelet/anticoagulation per protocol, urgent cardiology, early invasive strategy.'};
+},
+pit:['Not for STEMI, haemodynamic instability, or obvious non-cardiac cause: those patients need definitive management, not a score.','Low HEART alone is not enough for discharge. It must be paired with serial troponins (HEART Pathway, Mahler 2015).','History is subjective, and the original study used conventional (non-hs) troponin assays.'],
+ref:'Six AJ, Backus BE, Kelder JC. Neth Heart J 2008;16:191–6. Validated: Backus BE et al. Int J Cardiol 2013;168:2153–8.'},
+
+{id:'wellspe',name:'Wells Score (PE)',cat:'chest',desc:'Pretest probability of pulmonary embolism',kw:'pulmonary embolism pe wells vte d-dimer ctpa',
+fields:[
+  T('dvt','Clinical signs/symptoms of DVT',3,'Objective leg swelling and pain on palpation of deep veins'),
+  T('alt','PE is the #1 diagnosis, or equally likely',3),
+  T('hr','Heart rate >100',1.5),
+  T('imm','Immobilisation ≥3 days or surgery in previous 4 weeks',1.5),
+  T('prev','Previous objectively diagnosed DVT/PE',1.5),
+  T('hem','Haemoptysis',1),
+  T('ca','Malignancy (treated within 6 mo, or palliative)',1)
+],
+calc(c){
+  const s=c.pts();
+  const three = s<2?'Low (<2)':s<=6?'Moderate (2–6)':'High (>6)';
+  const extra='<div class="kv"><div>Two-tier (Wells 2001)</div><div>'+(s<=4?'PE unlikely (≤4)':'PE likely (>4)')+'</div><div>Three-tier (Wells 2000)</div><div>'+three+'</div></div>';
+  if(s<=4) return {score:s,of:12.5,tier:'g',label:'PE unlikely (≤4)',interp:'Low pretest probability.',next:'If clinical gestalt is <15%, apply <b>PERC</b>: if PERC-negative, no testing. Otherwise <b>D-dimer</b> (age-adjusted if >50 y: age × 10 µg/L FEU). Negative D-dimer → PE excluded. Positive → CTPA.',extra};
+  return {score:s,of:12.5,tier:s>6?'r':'a',label:'PE likely (>4)',interp:s>6?'High pretest probability.':'Moderate pretest probability.',next:'Go straight to <b>CTPA</b> (V/Q if contrast contraindicated or pregnant). Do not use D-dimer to exclude. Consider <b>empirical anticoagulation</b> while waiting for imaging if bleeding risk allows.',extra};
+},
+pit:['"PE most likely" (3 points) is subjective and drives much of the score.','Unstable patient with suspected PE: bedside echo/CTPA and reperfusion pathway. Do not score.','In pregnancy, consider YEARS or pregnancy-adapted algorithms instead.'],
+ref:'Wells PS et al. Thromb Haemost 2000;83:416–20. D-dimer/two-tier validation: Wells PS et al. Ann Intern Med 2001;135:98–107.'},
+
+{id:'perc',name:'PERC Rule',cat:'chest',desc:'Rule out PE without D-dimer in low-risk patients',kw:'pulmonary embolism rule out criteria perc d-dimer',
+fields:[
+  R('low','Gestalt pretest probability <15% (low)','REQUIRED. PERC is only valid if you already judge PE risk to be low'),
+  H('Criteria: toggle ON if present'),
+  R('age','Age ≥50'),
+  R('hr','Heart rate ≥100'),
+  R('sat','SpO₂ <95% on room air'),
+  R('leg','Unilateral leg swelling'),
+  R('hem','Haemoptysis'),
+  R('surg','Recent surgery or trauma ≤4 weeks','Requiring general anaesthesia (Kline 2004 wording). The 2008 validation phrased it as requiring hospitalisation'),
+  R('prev','Prior PE or DVT'),
+  R('horm','Hormone use','Oral contraceptives, hormone replacement or oestrogen therapy')
+],
+calc(c){
+  const n=c.count(['age','hr','sat','leg','hem','surg','prev','horm']);
+  if(!c.v.low) return {score:'N/A',tier:'a',label:'PERC not applicable',interp:'Gestalt pretest probability is not low (<15%), so PERC cannot be used.',next:'Use <b>Wells or Revised Geneva</b> → D-dimer or CTPA as indicated.'};
+  if(n===0) return {score:'0',of:8,tier:'g',label:'PERC negative',interp:'With low gestalt, risk of PE is <2%, below the test threshold.',next:'<b>No D-dimer or imaging needed</b> for PE. Look for alternative diagnoses.'};
+  return {score:n,of:8,tier:'a',label:'PERC positive ('+n+' criteria)',interp:'PE cannot be ruled out by PERC.',next:'Proceed to <b>D-dimer</b> (age-adjusted if >50 y). Negative → PE excluded. Positive → CTPA.'};
+},
+pit:['ONLY valid when clinician gestalt pretest probability is <15%. Never use it to "rule out" in moderate/high suspicion.','Less safe in high-prevalence populations (e.g., some European cohorts, PE prevalence >15%).','Not validated in pregnancy or postpartum. SpO₂ threshold assumes sea level.'],
+ref:'Kline JA et al. J Thromb Haemost 2004;2:1247–55. Prospective validation: Kline JA et al. J Thromb Haemost 2008;6:772–80. RCT: Freund Y et al. (PROPER) JAMA 2018;319:559–66.'},
+
+{id:'wellsdvt',name:'Wells Score (DVT)',cat:'chest',desc:'Pretest probability of lower-limb DVT',kw:'deep vein thrombosis dvt wells leg swelling ultrasound',
+fields:[
+  T('ca','Active cancer','Treatment within 6 mo, or palliative',1),
+  T('par','Paralysis, paresis, or recent plaster cast of lower limb',1),
+  T('bed','Bedridden ≥3 days, or major surgery within 12 weeks',1,'Surgery requiring general or regional anaesthesia'),
+  T('tend','Localised tenderness along deep venous system',1),
+  T('leg','Entire leg swollen',1),
+  T('calf','Calf swelling ≥3 cm vs asymptomatic leg',1,'Measured 10 cm below tibial tuberosity'),
+  T('pit','Pitting oedema confined to symptomatic leg',1),
+  T('col','Collateral superficial veins (non-varicose)',1),
+  T('prev','Previously documented DVT',1,'Added in the 2003 modified score'),
+  T('alt','Alternative diagnosis at least as likely as DVT',-2)
+],
+calc(c){
+  const s=c.pts();
+  const three = s<=0?'Low (≤0)':s<=2?'Moderate (1–2)':'High (≥3)';
+  const extra='<div class="kv"><div>Two-tier (2003)</div><div>'+(s<2?'DVT unlikely (<2)':'DVT likely (≥2)')+'</div><div>Three-tier (1997)*</div><div>'+three+'</div></div><p style="font-size:12px;color:var(--mu)">*1997 original did not include "previous DVT".</p>';
+  if(s<2) return {score:s,of:9,tier:'g',label:'DVT unlikely (<2)',interp:'Low pretest probability.',next:'<b>D-dimer</b>. Negative → DVT excluded. Positive → compression ultrasound.',extra};
+  return {score:s,of:9,tier:s>=3?'r':'a',label:'DVT likely (≥2)',interp:s>=3?'High pretest probability.':'Moderate pretest probability.',next:'<b>Compression ultrasound</b> (proximal or whole-leg). If negative: D-dimer. A positive D-dimer means repeat ultrasound in ~1 week. Consider anticoagulation if imaging is delayed.',extra};
+},
+pit:['Not validated in pregnancy, or in suspected upper-limb DVT.','A negative D-dimer cannot exclude DVT when the score is "likely".','Inpatients and patients with cancer have higher baseline prevalence, so the score performs less well.'],
+ref:'Wells PS et al. Lancet 1997;350:1795–8. Modified (2-tier): Wells PS et al. N Engl J Med 2003;349:1227–35.'},
+
+{id:'geneva',name:'Revised Geneva Score',cat:'chest',desc:'Objective PE pretest probability (no gestalt item)',kw:'pulmonary embolism pe geneva le gal',
+fields:[
+  T('age','Age >65',1),
+  T('prev','Previous DVT or PE',3),
+  T('surg','Surgery (general anaesthesia) or lower-limb fracture within 1 month',2),
+  T('ca','Active malignancy','Solid or haematological; active or considered cured <1 year',2),
+  T('pain','Unilateral lower-limb pain',3),
+  T('hem','Haemoptysis',2),
+  SEL('hr','Heart rate',[['<75',0],['75–94',3],['≥95',5]]),
+  T('palp','Pain on lower-limb deep venous palpation AND unilateral oedema',4)
+],
+calc(c){
+  if(!c.all()) return c.inc('Select heart rate');
+  const s=c.pts();
+  if(s<=3) return {score:s,of:22,tier:'g',label:'Low probability (0–3)',interp:'PE prevalence ≈ 8% in derivation/validation.',next:'<b>D-dimer</b> (age-adjusted if >50 y). Negative → PE excluded. Positive → CTPA.'};
+  if(s<=10) return {score:s,of:22,tier:'a',label:'Intermediate probability (4–10)',interp:'PE prevalence ≈ 28%.',next:'<b>D-dimer</b> (high-sensitivity). Negative → PE excluded. Positive → CTPA.'};
+  return {score:s,of:22,tier:'r',label:'High probability (≥11)',interp:'PE prevalence ≈ 74%.',next:'<b>CTPA</b> directly. D-dimer cannot exclude PE. Consider empirical anticoagulation.'};
+},
+pit:['Fully objective (no gestalt item), which makes it useful for less experienced clinicians.','A simplified version exists (1 point per item, HR ≥95 = 2). Do not mix the two point systems.','Validated in outpatients/ED. Not validated in pregnancy.'],
+ref:'Le Gal G et al. Ann Intern Med 2006;144:165–71.'},
+
+/* ---------------- NEURO / TRAUMA ---------------- */
+{id:'gcs',name:'Glasgow Coma Scale',cat:'neuro',desc:'Level of consciousness (adult)',kw:'gcs coma consciousness head injury',
+fields:[
+  SEL('e','Eye opening (E)',[['Spontaneous',4],['To sound',3],['To pressure',2],['None',1]]),
+  SEL('v','Verbal (V)',[['Oriented',5],['Confused',4],['Words',3],['Sounds',2],['None',1],['Intubated / not testable (VT)','T']]),
+  SEL('m','Motor (M)',[['Obeys commands',6],['Localises',5],['Normal flexion (withdraws)',4],['Abnormal flexion',3],['Extension',2],['None',1]])
+],
+calc(c){
+  if(!c.all()) return c.inc('Score E, V and M');
+  const e=c.p('e'),v=c.p('v'),m=c.p('m');
+  const comp='E'+e+'V'+v+'M'+m;
+  if(v==='T'){ const s=e+m; return {score:s+'T',of:'',tier:m<=5?'r':'a',label:'Intubated: '+comp,interp:'Verbal not testable. Report E + M with "T" (e.g., 7T). Motor score is the most prognostic component.',next:'Document the components. Look for reversible causes (sedation, hypoglycaemia, hypoxia, hypotension). CT head as indicated.'}; }
+  const s=e+v+m;
+  if(s>=13) return {score:s,of:15,tier:'g',label:'Mild ('+comp+')',interp:'GCS 13–15: mild brain injury range.',next:'Apply the <b>Canadian CT Head Rule</b> if trauma. Serial GCS. Check glucose.'};
+  if(s>=9) return {score:s,of:15,tier:'a',label:'Moderate ('+comp+')',interp:'GCS 9–12: moderate.',next:'<b>CT head</b>, close neuro observation, consider neurosurgical consult. Protect the airway if GCS is falling.'};
+  return {score:s,of:15,tier:'r',label:'Severe ('+comp+')',interp:'GCS ≤8: severe. Airway protection is likely needed.',next:'<b>Secure airway</b> (RSI) if not protecting it. Avoid hypoxia/hypotension. Urgent CT head and neurosurgery.'};
+},
+pit:['Always report components (E/V/M), not just the total.','Confounders: intoxication, sedation/paralysis, hypoxia, hypotension, post-ictal state, dysphasia, facial/eye swelling.','Record the best response. Use Pediatric GCS for pre-verbal children.'],
+ref:'Teasdale G, Jennett B. Lancet 1974;2(7872):81–4.'},
+
+{id:'cchr',name:'Canadian CT Head Rule',cat:'neuro',desc:'CT need in minor head injury (GCS 13–15)',kw:'head injury ct cchr minor tbi',
+fields:[
+  R('inc','Inclusion met','Blunt head trauma with witnessed LOC, definite amnesia, or witnessed disorientation, AND GCS 13–15'),
+  R('exc','Any exclusion present','Age <16, anticoagulant/bleeding disorder, seizure after injury, obvious open/depressed skull fracture, acute focal neuro deficit, unstable vitals, pregnancy, return visit for same injury, no clear trauma history'),
+  H('High risk (neurosurgical intervention)'),
+  R('g2','GCS <15 at 2 h after injury'),
+  R('open','Suspected open or depressed skull fracture'),
+  R('bas','Any sign of basal skull fracture','Haemotympanum, "raccoon" eyes, CSF oto-/rhinorrhoea, Battle\'s sign'),
+  R('vom','Vomiting ≥2 episodes'),
+  R('age','Age ≥65'),
+  H('Medium risk (brain injury on CT)'),
+  R('amn','Retrograde amnesia ≥30 min before impact'),
+  R('mech','Dangerous mechanism','Pedestrian struck by motor vehicle, occupant ejected from vehicle, fall from >3 ft (0.91 m) or >5 stairs')
+],
+calc(c){
+  if(!c.v.inc||c.v.exc) return {score:'N/A',tier:'a',label:'Rule not applicable',interp:c.v.exc?'An exclusion is present.':'Inclusion criteria are not met (or not yet confirmed).',next:'Use clinical judgement. Patients on anticoagulants or with bleeding disorders generally need <b>CT head</b> per NICE/ACEP guidance.'};
+  const hi=c.count(['g2','open','bas','vom','age']), md=c.count(['amn','mech']);
+  if(hi) return {score:'CT',tier:'r',label:'High risk: CT head',interp:'Risk of needing neurosurgical intervention.',next:'<b>CT head</b> now. Neurosurgical consult if positive.'};
+  if(md) return {score:'CT',tier:'a',label:'Medium risk: CT head',interp:'Risk of clinically important brain injury on CT.',next:'<b>CT head</b> recommended.'};
+  return {score:'No CT',tier:'g',label:'Low risk: no CT needed',interp:'No high- or medium-risk factors.',next:'<b>No CT required</b> by CCHR. Give head-injury discharge advice with a responsible adult.'};
+},
+pit:['Only applies to GCS 13–15 with LOC, amnesia or disorientation. "Minimal" head injury without these is outside the rule.','Anticoagulated patients were excluded. Do not apply the rule to them.','Sensitivity ≈100% for neurosurgical intervention in derivation. Clinical judgement overrides it.'],
+ref:'Stiell IG et al. Lancet 2001;357:1391–6.'},
+
+{id:'nexus',name:'NEXUS C-Spine',cat:'neuro',desc:'Low-risk criteria to skip C-spine imaging',kw:'nexus cervical spine c-spine trauma imaging',
+fields:[
+  H('Toggle ON if present'),
+  R('mid','Posterior midline cervical tenderness'),
+  R('neuro','Focal neurological deficit'),
+  R('alert','Altered level of alertness','GCS <15, disorientation, delayed or inappropriate responses'),
+  R('intox','Evidence of intoxication'),
+  R('dist','Painful distracting injury')
+],
+calc(c){
+  const n=c.count(['mid','neuro','alert','intox','dist']);
+  if(n===0) return {score:'0',of:5,tier:'g',label:'NEXUS low risk',interp:'All 5 low-risk criteria met.',next:'<b>No C-spine imaging</b> required. Clear clinically.'};
+  return {score:n,of:5,tier:'r',label:'Imaging indicated',interp:'One or more NEXUS criteria present.',next:'<b>CT cervical spine</b> (adults). Keep spinal precautions until cleared.'};
+},
+pit:['Lower sensitivity in older adults (≥65): many guidelines image regardless.','"Distracting injury" and "intoxication" are subjective.','Limited data in children <9 y.','The Canadian C-Spine Rule had higher sensitivity and specificity than NEXUS head-to-head (Stiell 2003).'],
+ref:'Hoffman JR et al. N Engl J Med 2000;343:94–9.'},
+
+{id:'ccspine',name:'Canadian C-Spine Rule',cat:'neuro',desc:'C-spine imaging in alert, stable trauma',kw:'canadian c-spine ccr cervical neck trauma',
+fields:[
+  R('exc','Any exclusion present','Age <16, GCS <15, unstable vitals (SBP <90, RR <10 or >24), penetrating trauma, acute paralysis, known vertebral disease (AS, RA, stenosis, prior C-spine surgery), return visit, pregnancy'),
+  H('1. High-risk factor? (any → image)'),
+  R('age','Age ≥65'),
+  R('mech','Dangerous mechanism','Fall ≥3 ft / 5 stairs, axial load to head (diving), MVC high speed (>100 km/h), rollover or ejection, motorised recreational vehicle, bicycle collision'),
+  R('par','Paraesthesias in extremities'),
+  H('2. Low-risk factor allowing safe ROM assessment?'),
+  R('rear','Simple rear-end MVC','Excludes: pushed into oncoming traffic, hit by bus/large truck, rollover, hit by high-speed vehicle'),
+  R('sit','Sitting position in ED'),
+  R('amb','Ambulatory at any time'),
+  R('del','Delayed onset of neck pain'),
+  R('nomid','Absence of midline C-spine tenderness'),
+  SEL('rot','3. Able to actively rotate neck 45° left AND right?',[['Not yet assessed',null],['Able',1],['Unable',0]],null,{show:v=>!(v.age||v.mech||v.par)&&(v.rear||v.sit||v.amb||v.del||v.nomid)})
+],
+calc(c){
+  const v=c.v;
+  if(v.exc) return {score:'N/A',tier:'a',label:'Rule not applicable',interp:'An exclusion is present.',next:'Use clinical judgement or NEXUS. Low threshold for <b>CT C-spine</b>.'};
+  if(v.age||v.mech||v.par) return {score:'Image',tier:'r',label:'High risk: imaging',interp:'High-risk factor present.',next:'<b>CT cervical spine</b>. Maintain immobilisation.'};
+  if(!(v.rear||v.sit||v.amb||v.del||v.nomid)) return {score:'Image',tier:'r',label:'No low-risk factor: imaging',interp:'Range of motion cannot be safely assessed.',next:'<b>CT cervical spine</b>.'};
+  const r=c.p('rot');
+  if(r===1) return {score:'Clear',tier:'g',label:'No imaging needed',interp:'Low risk, and able to actively rotate 45° each way.',next:'<b>Clear C-spine clinically</b>. No imaging.'};
+  if(r===0) return {score:'Image',tier:'r',label:'Unable to rotate: imaging',interp:'Cannot actively rotate 45° left and right.',next:'<b>CT cervical spine</b>.'};
+  return {score:'?',tier:'n',label:'Assess active rotation',interp:'Low-risk factor present. Now ask the patient to actively rotate the neck 45° left and right.',next:'Record the result above.'};
+},
+pit:['Only for alert (GCS 15), stable adult trauma patients.','Active rotation is tested only after a low-risk factor is confirmed and no high-risk factor is present.','Sensitivity ≈99–100% for clinically important injury in derivation and validation.'],
+ref:'Stiell IG et al. JAMA 2001;286:1841–8. vs NEXUS: Stiell IG et al. N Engl J Med 2003;349:2510–8.'},
+
+{id:'nihss',name:'NIH Stroke Scale',cat:'neuro',desc:'Stroke severity (0–42)',kw:'nihss stroke cva thrombolysis thrombectomy lvo',
+fields:[
+  SEL('1a','1a. Level of consciousness',[['Alert',0],['Not alert, arousable by minor stimulation',1],['Requires repeated/strong stimulation',2],['Unresponsive / reflex responses only',3]]),
+  SEL('1b','1b. LOC questions (month, age)',[['Both correct',0],['One correct',1],['Neither correct',2]]),
+  SEL('1c','1c. LOC commands (eyes, grip)',[['Both correct',0],['One correct',1],['Neither correct',2]]),
+  SEL('2','2. Best gaze',[['Normal',0],['Partial gaze palsy',1],['Forced deviation / total gaze paresis',2]]),
+  SEL('3','3. Visual fields',[['No visual loss',0],['Partial hemianopia',1],['Complete hemianopia',2],['Bilateral hemianopia / cortical blindness',3]]),
+  SEL('4','4. Facial palsy',[['Normal',0],['Minor (flat nasolabial fold, smile asymmetry)',1],['Partial (total/near-total lower face)',2],['Complete (upper + lower face)',3]]),
+  SEL('5a','5a. Motor: left arm',[['No drift (10 s)',0],['Drift, does not hit bed',1],['Some effort against gravity',2],['No effort against gravity',3],['No movement',4],['UN: amputation / joint fusion',0]]),
+  SEL('5b','5b. Motor: right arm',[['No drift (10 s)',0],['Drift, does not hit bed',1],['Some effort against gravity',2],['No effort against gravity',3],['No movement',4],['UN: amputation / joint fusion',0]]),
+  SEL('6a','6a. Motor: left leg',[['No drift (5 s)',0],['Drift, does not hit bed',1],['Some effort against gravity',2],['No effort against gravity',3],['No movement',4],['UN: amputation / joint fusion',0]]),
+  SEL('6b','6b. Motor: right leg',[['No drift (5 s)',0],['Drift, does not hit bed',1],['Some effort against gravity',2],['No effort against gravity',3],['No movement',4],['UN: amputation / joint fusion',0]]),
+  SEL('7','7. Limb ataxia',[['Absent (or paralysed / cannot understand)',0],['Present in one limb',1],['Present in two limbs',2]]),
+  SEL('8','8. Sensory',[['Normal',0],['Mild–moderate loss',1],['Severe / total loss',2]]),
+  SEL('9','9. Best language',[['No aphasia',0],['Mild–moderate aphasia',1],['Severe aphasia',2],['Mute / global aphasia',3]]),
+  SEL('10','10. Dysarthria',[['Normal',0],['Mild–moderate',1],['Severe (unintelligible / mute)',2],['UN: intubated / physical barrier',0]]),
+  SEL('11','11. Extinction / inattention',[['No abnormality',0],['Inattention in one modality',1],['Profound hemi-inattention / >1 modality',2]])
+],
+calc(c){
+  const s=c.pts(), done=c.answered();
+  if(!c.all()) return {score:s,of:42,tier:'n',label:'Partial: '+done+'/15 items',interp:'Score so far: '+s+'. Complete all items.',next:'Score the first response. Do not coach the patient.'};
+  let r;
+  if(s===0) r=['g','No stroke symptoms (0)'];
+  else if(s<=4) r=['g','Minor stroke (1–4)'];
+  else if(s<=15) r=['a','Moderate stroke (5–15)'];
+  else if(s<=20) r=['r','Moderate–severe (16–20)'];
+  else r=['r','Severe stroke (21–42)'];
+  return {score:s,of:42,tier:r[0],label:r[1],interp:'Higher scores correlate with infarct size and worse outcome.',next:'Eligibility for <b>IV thrombolysis</b> depends on time and whether the deficit is <b>disabling</b>, not on a cut-off (a disabling deficit with low NIHSS can still qualify). NIHSS ≥6 suggests possible LVO: get <b>CTA</b> for thrombectomy (up to 24 h with imaging selection).'};
+},
+pit:['Under-scores posterior circulation stroke: disabling vertigo/ataxia/dysphagia can score 0–2.','Left-hemisphere strokes score higher than equal-sized right-hemisphere strokes (language items).','"UN" items add 0 points. Document why they were untestable.'],
+ref:'Brott T et al. Stroke 1989;20:864–70.'},
+
+{id:'abcd2',name:'ABCD² Score',cat:'neuro',desc:'Early stroke risk after TIA',kw:'abcd2 tia transient ischemic attack stroke risk',
+fields:[
+  T('age','Age ≥60',1),
+  T('bp','BP ≥140/90 at first assessment',1),
+  SEL('cl','Clinical features',[['Other',0],['Speech disturbance without weakness',1],['Unilateral weakness',2]]),
+  SEL('du','Duration of symptoms',[['<10 min',0],['10–59 min',1],['≥60 min',2]]),
+  T('dm','Diabetes',1)
+],
+calc(c){
+  if(!c.all()) return c.inc('Select clinical features and duration');
+  const s=c.pts();
+  const nx='All suspected TIAs need <b>urgent work-up</b> (brain MRI-DWI, carotid/vascular imaging, ECG ± monitoring for AF, glucose/lipids), ideally within 24 h, whatever the score. Start antiplatelet therapy once haemorrhage is excluded.';
+  if(s<=3) return {score:s,of:7,tier:'g',label:'Low risk (0–3)',interp:'2-day stroke risk ≈ 1.0%.',next:nx};
+  if(s<=5) return {score:s,of:7,tier:'a',label:'Moderate risk (4–5)',interp:'2-day stroke risk ≈ 4.1%.',next:nx+' Consider DAPT for high-risk TIA per POINT/CHANCE.'};
+  return {score:s,of:7,tier:'r',label:'High risk (6–7)',interp:'2-day stroke risk ≈ 8.1%.',next:nx+' Consider DAPT for high-risk TIA per POINT/CHANCE.'};
+},
+pit:['AHA/ASA and NICE (2019) no longer recommend ABCD² alone to triage TIA urgency.','A low score can still hide AF or significant carotid stenosis.','Mimics (migraine, seizure, hypoglycaemia) are common. Confirm the diagnosis.'],
+ref:'Johnston SC et al. Lancet 2007;369:283–92.'},
+
+/* ---------------- SEPSIS / INFECTION ---------------- */
+{id:'qsofa',name:'qSOFA',cat:'sepsis',desc:'Bedside risk of poor outcome in suspected infection',kw:'qsofa sepsis-3 quick sofa',
+fields:[
+  T('rr','Respiratory rate ≥22/min',1),
+  T('ms','Altered mentation (GCS <15)',1),
+  T('sbp','Systolic BP ≤100 mmHg',1)
+],
+calc(c){
+  const s=c.pts();
+  if(s>=2) return {score:s,of:3,tier:'r',label:'qSOFA positive (≥2)',interp:'Higher risk of in-hospital death or prolonged ICU stay.',next:'Look for <b>organ dysfunction</b> (lactate, full SOFA). Start the <b>sepsis bundle</b>: cultures, antibiotics within 1 h, 30 mL/kg crystalloid if hypotensive or lactate ≥4. Consider ICU.'};
+  if(s===1) return {score:s,of:3,tier:'a',label:'qSOFA 1',interp:'Does not rule out sepsis.',next:'Reassess often. Check lactate, and use NEWS/SIRS alongside.'};
+  return {score:s,of:3,tier:'g',label:'qSOFA 0',interp:'Lower risk, but low sensitivity.',next:'A negative qSOFA does <b>not</b> exclude sepsis. Treat infection on clinical grounds.'};
+},
+pit:['A prognostic tool, NOT a screening tool. SSC 2021 recommends against using qSOFA alone for screening (low sensitivity vs SIRS/NEWS).','Derived in patients with suspected infection only.'],
+ref:'Seymour CW et al. JAMA 2016;315:762–74 (Sepsis-3: Singer M et al. JAMA 2016;315:801–10).'},
+
+{id:'sirs',name:'SIRS Criteria',cat:'sepsis',desc:'Systemic inflammatory response (1992)',kw:'sirs sepsis systemic inflammatory response',
+fields:[
+  T('t','Temp >38.0 °C or <36.0 °C',1),
+  T('hr','Heart rate >90/min',1),
+  {t:'tog',id:'rr',p:1,l:'RR >20/min or PaCO₂ <32 mmHg (4.3 kPa)'},
+  T('wbc','WBC >12 or <4 ×10⁹/L, or >10% bands',1),
+  R('inf','Suspected or confirmed infection','Not scored. Used for the 1992 sepsis definition')
+],
+calc(c){
+  const s=c.pts();
+  if(s<2) return {score:s,of:4,tier:'g',label:'SIRS not met',interp:'<2 criteria.',next:'Does not exclude serious infection (≈1 in 8 patients with sepsis are SIRS-negative).'};
+  if(c.v.inf) return {score:s,of:4,tier:'r',label:'SIRS + infection',interp:'Meets the 1992 "sepsis" definition. Sepsis-3 now defines sepsis by organ dysfunction (SOFA ≥2).',next:'<b>Sepsis work-up</b>: lactate, cultures, early antibiotics, fluids, look for organ dysfunction.'};
+  return {score:s,of:4,tier:'a',label:'SIRS positive (≥2)',interp:'Non-specific: also seen in trauma, pancreatitis, burns, PE, etc.',next:'Look for a source of infection and for non-infectious causes.'};
+},
+pit:['Sensitive but non-specific.','No longer part of the Sepsis-3 definition, but still widely used for screening.'],
+ref:'Bone RC et al. ACCP/SCCM Consensus Conference. Chest 1992;101:1644–55.'},
+
+{id:'curb65',name:'CURB-65',cat:'sepsis',desc:'Severity of community-acquired pneumonia',kw:'curb65 cap pneumonia severity',
+fields:[
+  T('c','Confusion (new)',1),
+  {t:'tog',id:'u',p:1,l:u=>u==='si'?'Urea >7 mmol/L':'BUN >19 mg/dL',sub:'Urea >7 mmol/L ≈ BUN >19–20 mg/dL'},
+  T('rr','Respiratory rate ≥30/min',1),
+  T('bp','SBP <90 or DBP ≤60 mmHg',1),
+  T('age','Age ≥65',1)
+],
+calc(c){
+  const s=c.pts(), mort=['0.7','3.2','13','17','41.5','57'][s];
+  if(s<=1) return {score:s,of:5,tier:'g',label:'Low severity (0–1)',interp:'30-day mortality ≈ '+mort+'% (derivation cohort).',next:'Consider <b>outpatient treatment</b> if SpO₂, comorbidity and social circumstances allow.'};
+  if(s===2) return {score:s,of:5,tier:'a',label:'Moderate severity (2)',interp:'30-day mortality ≈ '+mort+'% (derivation cohort).',next:'<b>Short inpatient stay</b> or hospital-supervised outpatient treatment.'};
+  return {score:s,of:5,tier:'r',label:'Severe pneumonia (3–5)',interp:'30-day mortality ≈ '+mort+'% (derivation cohort).',next:'<b>Admit</b> and treat as severe CAP. At 4–5, assess for <b>ICU</b> (use IDSA/ATS major/minor criteria).'};
+},
+pit:['Ignores hypoxaemia: SpO₂ <92% or new O₂ need means admission whatever the score.','Ignores comorbidity, pregnancy, immunosuppression and social factors. IDSA/ATS 2019 prefer PSI for site-of-care decisions.','Use CRB-65 in the community, where urea is not available.'],
+ref:'Lim WS et al. Thorax 2003;58:377–82.'},
+
+{id:'centor',name:'Centor / McIsaac',cat:'sepsis',desc:'Group A strep pharyngitis likelihood',kw:'centor mcisaac strep pharyngitis sore throat gas',
+fields:[
+  T('t','Temperature >38 °C',1),
+  T('c','Absence of cough',1),
+  T('n','Tender/swollen anterior cervical nodes',1),
+  T('x','Tonsillar swelling or exudate',1),
+  SEL('age','Age (McIsaac modifier)',[['3–14 y',1],['15–44 y',0],['≥45 y',-1]])
+],
+calc(c){
+  const centor=c.count(['t','c','n','x']);
+  if(!c.all()) return {score:centor,of:4,tier:'n',label:'Centor '+centor+'/4',interp:'Select age to get the McIsaac score.',next:''};
+  const s=c.pts();
+  const risk = s<=1?'≈1–10%':s===2?'≈11–17%':s===3?'≈28–35%':'≈51–53%';
+  const extra='<div class="kv"><div>Centor (no age)</div><div>'+centor+'/4</div><div>McIsaac</div><div>'+fmtP(s)+'</div><div>GAS likelihood</div><div>'+risk+'</div></div>';
+  if(s<=1) return {score:fmtP(s),of:5,tier:'g',label:'Low ('+fmtP(s)+')',interp:'Group A strep (GAS) likelihood '+risk+'.',next:'<b>No testing and no antibiotics.</b> Symptomatic care.',extra};
+  if(s<=3) return {score:fmtP(s),of:5,tier:'a',label:'Intermediate ('+s+')',interp:'GAS likelihood '+risk+'.',next:'<b>Rapid antigen test ± culture</b>. Antibiotics only if positive (children: back up a negative RADT with culture).',extra};
+  return {score:fmtP(s),of:5,tier:'r',label:'High ('+s+')',interp:'GAS likelihood '+risk+'.',next:'<b>Test (RADT/culture) and treat if positive.</b> Some guidelines (ACP/CDC 2016, McIsaac) allow empirical antibiotics at ≥4. IDSA recommends testing.',extra};
+},
+pit:['Not for children <3 y (GAS pharyngitis is rare, and IDSA advises against routine testing).','Viral features (conjunctivitis, coryza, oral ulcers, hoarseness) argue against GAS.','Red flags beyond the score: trismus, drooling, "hot potato" voice, stridor (peritonsillar abscess, epiglottitis, Lemierre).'],
+ref:'Centor RM et al. Med Decis Making 1981;1:239–46. McIsaac WJ et al. CMAJ 1998;158:75–83.'},
+
+/* ---------------- PEDS ---------------- */
+{id:'pecarn',name:'PECARN Head Trauma',cat:'peds',desc:'CT need in children with minor head trauma',kw:'pecarn pediatric head injury ct child',
+fields:[
+  SEL('ag','Age group',[['<2 years',0],['≥2 years',1]],'Applies to GCS 14–15, within 24 h of head trauma'),
+  H('High risk',{show:v=>v.ag!=null}),
+  R('ams','GCS 14 or other signs of altered mental status','Agitation, somnolence, repetitive questioning, slow response to verbal communication'),
+  R('psf','Palpable skull fracture'),
+  R('bsf','Signs of basilar skull fracture'),
+  H('Intermediate risk',{show:v=>v.ag!=null}),
+  R('hem','Occipital, parietal or temporal scalp haematoma'),
+  R('loc5','LOC ≥5 seconds'),
+  R('loc','Any history of LOC'),
+  R('vom','History of vomiting'),
+  R('mech0','Severe mechanism of injury','MVC with ejection/rollover/death of a passenger · pedestrian or unhelmeted cyclist struck by motor vehicle · fall >0.9 m (3 ft) · head struck by high-impact object'),
+  R('mech1','Severe mechanism of injury','MVC with ejection/rollover/death of a passenger · pedestrian or unhelmeted cyclist struck by motor vehicle · fall >1.5 m (5 ft) · head struck by high-impact object'),
+  R('act','Not acting normally per parent'),
+  R('ha','Severe headache')
+].map(f=>{
+  const lt2=['psf','hem','loc5','mech0','act'], ge2=['bsf','loc','vom','mech1','ha'];
+  if(lt2.includes(f.id)) f.show=v=>v.ag===0;
+  else if(ge2.includes(f.id)) f.show=v=>v.ag===1;
+  else if(f.id==='ams') f.show=v=>v.ag!=null;
+  return f;}),
+calc(c){
+  const ag=c.v.ag;
+  if(ag==null) return c.inc('Select age group');
+  const hi = ag===0 ? c.count(['ams','psf']) : c.count(['ams','bsf']);
+  const mid = ag===0 ? c.count(['hem','loc5','mech0','act']) : c.count(['loc','vom','mech1','ha']);
+  if(hi) return {score:'CT',tier:'r',label:'High risk: CT recommended',interp:'Risk of clinically important TBI ≈ '+(ag===0?'4.4%':'4.3%')+'.',next:'<b>CT head</b> recommended.'};
+  if(mid) return {score:'Obs/CT',tier:'a',label:'Intermediate risk',interp:'ciTBI risk ≈ 0.9%.',next:'<b>Observation vs CT</b>, guided by clinician experience, multiple vs isolated findings, worsening symptoms during observation, age <3 months'+(ag===0?'':'')+', and parental preference.'};
+  return {score:'No CT',tier:'g',label:'Very low risk: no CT',interp:'ciTBI risk '+(ag===0?'<0.02%':'<0.05%')+'.',next:'<b>CT not recommended.</b> Discharge with head-injury advice.'};
+},
+pit:['Only for GCS 14–15 within 24 h of injury. Excluded: penetrating trauma, known brain tumour, pre-existing neuro disorder, neuroimaging at an outside hospital, ventricular shunt, bleeding disorder.','Suspected non-accidental injury needs a separate pathway (skeletal survey, safeguarding).','Isolated findings (e.g., isolated LOC or isolated vomiting) carry lower risk, so observation is often preferred.'],
+ref:'Kuppermann N et al. Lancet 2009;374:1160–70.'},
+
+{id:'pgcs',name:'Pediatric GCS',cat:'peds',desc:'Consciousness in pre-verbal children (<2 y)',kw:'pediatric gcs infant coma child',
+fields:[
+  SEL('e','Eye opening (E)',[['Spontaneous',4],['To speech / sound',3],['To pain',2],['None',1]]),
+  SEL('v','Verbal (V): infant',[['Coos, babbles (age-appropriate)',5],['Irritable cry, consolable',4],['Cries to pain / inconsolable',3],['Moans / grunts to pain',2],['None',1]]),
+  SEL('m','Motor (M)',[['Normal spontaneous movement',6],['Withdraws to touch',5],['Withdraws to pain',4],['Abnormal flexion (decorticate)',3],['Extension (decerebrate)',2],['None',1]])
+],
+calc(c){
+  if(!c.all()) return c.inc('Score E, V and M');
+  const s=c.pts(), comp='E'+c.p('e')+'V'+c.p('v')+'M'+c.p('m');
+  if(s>=13) return {score:s,of:15,tier:'g',label:'Mild ('+comp+')',interp:'13–15.',next:'If trauma, apply <b>PECARN</b>. Check glucose. Serial assessments.'};
+  if(s>=9) return {score:s,of:15,tier:'a',label:'Moderate ('+comp+')',interp:'9–12.',next:'<b>CT head</b>, close observation, paediatric/neurosurgical input.'};
+  return {score:s,of:15,tier:'r',label:'Severe ('+comp+')',interp:'≤8.',next:'<b>Secure airway</b>, avoid hypoxia/hypotension, urgent CT and neurosurgery/PICU.'};
+},
+pit:['Several verbal-scale versions exist (e.g., James & Trauner, Holmes). Use your institution\'s version for consistency.','Use the adult GCS once the child is verbal (usually ≥2–5 y).','Score the best response. Crying from hunger or fear can confound the verbal score.'],
+ref:'Adapted from Teasdale & Jennett 1974. Paediatric verbal scale: James HE, Trauner DA 1985. ED validation: Holmes JF et al. Acad Emerg Med 2005;12:814–9.'},
+
+{id:'pedsresus',name:'Peds Resus Doses',cat:'peds',desc:'Weight-based adrenaline, fluids, defib joules',kw:'pediatric resuscitation epinephrine adrenaline defibrillation fluid bolus amiodarone adenosine pals apls weight',
+fields:[
+  NUM('wt','Weight','kg',{sub:'Measured or length-based (Broselow). Overrides the age estimate'}),
+  NUM('age','Age (to estimate weight)','years',{sub:'Optional. APLS formula used if no weight entered (decimals allowed, e.g., 0.5)'})
+],
+calc(c){
+  let w=c.n('wt'), age=c.n('age'), est=false;
+  if(!(w>0) && age>=0){
+    if(age<1) w=0.5*(age*12)+4; else if(age<=5) w=2*age+8; else if(age<=12) w=3*age+7; else w=NaN;
+    est=true;
+  }
+  if(!(w>0)) return c.inc(age>12?'Age >12 y: enter actual weight':'Enter weight (kg) or age');
+  const cap=(x,m)=>Math.min(x,m), d=x=>fmt(x,x<1?2:1);
+  const ea=cap(0.01*w,1), an=cap(0.01*w,0.5), fl=cap(20*w,1000), fl10=cap(10*w,1000), am=cap(5*w,300), ad1=cap(0.1*w,6), ad2=cap(0.2*w,12);
+  const rows=[
+    ['Adrenaline: cardiac arrest','0.01 mg/kg IV/IO','<b>'+d(ea)+' mg</b> = '+d(ea*10)+' mL of 0.1 mg/mL (1:10 000)'+(ea>=1?' (max)':'')+', q3–5 min'],
+    ['Adrenaline: anaphylaxis','0.01 mg/kg IM','<b>'+d(an)+' mg</b> = '+d(an)+' mL of 1 mg/mL (1:1000)'+(an>=0.5?' (max)':'')+', anterolateral thigh, repeat q5 min'],
+    ['Fluid bolus','20 mL/kg isotonic','<b>'+Math.round(fl)+' mL</b>'+(fl>=1000?' (max)':'')+'. Use 10 mL/kg (<b>'+Math.round(fl10)+' mL</b>) for cardiac dysfunction, DKA, neonates. Reassess after each'],
+    ['Defibrillation (VF/pVT)','2 → 4 J/kg','1st <b>'+Math.round(2*w)+' J</b> · 2nd <b>'+Math.round(4*w)+' J</b> · then ≥4 J/kg, max 10 J/kg or adult dose'],
+    ['Synchronised cardioversion','0.5–1 → 2 J/kg','<b>'+fmt(0.5*w,0)+'–'+fmt(w,0)+' J</b>, then <b>'+Math.round(2*w)+' J</b>'],
+    ['Amiodarone (VF/pVT)','5 mg/kg IV/IO','<b>'+d(am)+' mg</b>'+(am>=300?' (max)':'')+'. May repeat to 15 mg/kg total'],
+    ['Adenosine (SVT)','0.1 → 0.2 mg/kg','1st <b>'+d(ad1)+' mg</b>'+(ad1>=6?' (max)':'')+' · 2nd <b>'+d(ad2)+' mg</b>'+(ad2>=12?' (max)':'')+'. Rapid push + flush']
+  ];
+  let ett='';
+  if(est && age>=2) ett='<p>Cuffed ETT ≈ <b>'+fmt(age/4+3.5,1)+' mm</b> ID (age/4 + 3.5).</p>';
+  const extra='<table><thead><tr><th style="width:30%">Drug</th><th style="width:22%">Dose</th><th>For '+fmt(w,1)+' kg</th></tr></thead><tbody>'+rows.map(r=>'<tr><td>'+r[0]+'</td><td>'+r[1]+'</td><td>'+r[2]+'</td></tr>').join('')+'</tbody></table>'+ett;
+  return {score:fmt(w,1),of:'kg',tier:'i',label:est?'Estimated weight (APLS)':'Measured weight',interp:est?'APLS estimate: <1 y (0.5 × months) + 4 · 1–5 y (2 × age) + 8 · 6–12 y (3 × age) + 7.':'Doses calculated from the entered weight.',next:'Check every dose against <b>local protocol</b> and drug concentration. Read back aloud before giving.',extra};
+},
+pit:['Age-based estimates are often wrong: use measured or length-based weight where possible.','Obese children: many resus drugs are dosed on ideal/lean body weight.','Anaphylaxis: some guidelines (e.g., RCUK) use age bands (150/300/500 µg) or cap at 0.3 mg pre-pubertal. Follow local practice.','Recent guidance (WHO, PALS 2020) supports 10–20 mL/kg aliquots with frequent reassessment.'],
+ref:'AHA PALS: Topjian AA et al. Circulation 2020;142(suppl 2):S469–S523. Weight formulas: APLS (ALSG) 2011.'},
+
+/* ---------------- CARDIO / ANTICOAGULATION ---------------- */
+{id:'chads',name:'CHA₂DS₂-VASc',cat:'cardio',desc:'Stroke risk in non-valvular AF',kw:'chads2 chads vasc atrial fibrillation af anticoagulation stroke',
+fields:[
+  T('chf','Congestive heart failure / LV dysfunction',1),
+  T('htn','Hypertension',1),
+  SEL('age','Age',[['<65',0],['65–74',1],['≥75',2]]),
+  T('dm','Diabetes mellitus',1),
+  T('st','Stroke / TIA / thromboembolism',2),
+  T('vasc','Vascular disease','Prior MI, PAD, or aortic plaque',1),
+  SEL('sex','Sex',[['Male',0],['Female',1]])
+],
+calc(c){
+  if(!c.all()) return c.inc('Select age and sex');
+  const s=c.pts(), va=s-c.p('sex');
+  const extra='<div class="kv"><div>CHA₂DS₂-VASc</div><div>'+s+'/9</div><div>CHA₂DS₂-VA (ESC 2024, no sex point)</div><div>'+va+'/8</div></div>';
+  if(va===0) return {score:s,of:9,tier:'g',label:'Low risk',interp:'CHA₂DS₂-VASc 0 (men) / 1 (women).',next:'<b>No anticoagulation</b>. No antiplatelet therapy for stroke prevention. Reassess risk periodically.',extra};
+  if(va===1) return {score:s,of:9,tier:'a',label:'Intermediate',interp:'CHA₂DS₂-VASc 1 (men) / 2 (women).',next:'<b>Consider OAC</b> (ESC 2024: should be considered at CHA₂DS₂-VA 1. ACC/AHA 2023: reasonable). Shared decision-making.',extra};
+  return {score:s,of:9,tier:'r',label:'High risk',interp:'CHA₂DS₂-VASc ≥2 (men) / ≥3 (women).',next:'<b>Oral anticoagulation recommended</b>. DOAC preferred over warfarin (except mechanical valve or moderate–severe mitral stenosis).',extra};
+},
+pit:['Not for "valvular" AF (mechanical valve, moderate–severe mitral stenosis): these need warfarin.','Female sex is a risk modifier, not a stand-alone indication.','A high bleeding score is not a reason to withhold OAC. Fix modifiable bleeding risks instead.'],
+ref:'Lip GYH et al. Chest 2010;137:263–72.'},
+
+{id:'hasbled',name:'HAS-BLED',cat:'cardio',desc:'1-year major bleeding risk on anticoagulation',kw:'has-bled hasbled bleeding risk anticoagulation af',
+fields:[
+  T('h','Hypertension: uncontrolled, SBP >160 mmHg',1),
+  T('ren','Abnormal renal function','Dialysis, transplant, or Cr ≥200 µmol/L (≥2.26 mg/dL)',1),
+  T('liv','Abnormal liver function','Cirrhosis, or bilirubin >2× ULN with AST/ALT/ALP >3× ULN',1),
+  T('st','Stroke history',1),
+  T('bl','Bleeding history or predisposition','Prior major bleed, anaemia, thrombocytopenia',1),
+  T('inr','Labile INR','Time in therapeutic range <60%',1),
+  T('eld','Elderly: age >65',1),
+  T('dr','Drugs: antiplatelet or NSAID',1),
+  T('alc','Alcohol: ≥8 drinks/week',1)
+],
+calc(c){
+  const s=c.pts();
+  const r = s===0?'≈1.1':s===1?'≈1.0':s===2?'≈1.9':s===3?'≈3.7':s===4?'≈8.7':'>12';
+  const interp='Major bleeds ≈ '+r+' per 100 patient-years (derivation cohort).';
+  if(s<=1) return {score:s,of:9,tier:'g',label:'Low bleeding risk',interp,next:'Anticoagulate as indicated by CHA₂DS₂-VASc.'};
+  if(s===2) return {score:s,of:9,tier:'a',label:'Moderate bleeding risk',interp,next:'Anticoagulate as indicated. Address modifiable factors.'};
+  return {score:s,of:9,tier:'r',label:'High bleeding risk (≥3)',interp,next:'<b>Not a reason to withhold OAC.</b> Fix modifiable factors (BP, labile INR, antiplatelets/NSAIDs, alcohol) and review more often.'};
+},
+pit:['Use it to find modifiable risk factors, not to deny anticoagulation.','"Labile INR" applies only to patients on warfarin. Score 0 for DOAC users.'],
+ref:'Pisters R et al. Chest 2010;138:1093–100.'},
+
+/* ---------------- MSK ---------------- */
+{id:'ottankle',name:'Ottawa Ankle & Foot',cat:'msk',desc:'X-ray need after ankle/midfoot injury',kw:'ottawa ankle foot x-ray fracture sprain',
+fields:[
+  H('Ankle'),
+  R('mal','Pain in the malleolar zone'),
+  R('lat','Bone tenderness: posterior edge/tip of LATERAL malleolus','Distal 6 cm'),
+  R('med','Bone tenderness: posterior edge/tip of MEDIAL malleolus','Distal 6 cm'),
+  H('Foot'),
+  R('mid','Pain in the midfoot zone'),
+  R('mt5','Bone tenderness at base of 5th metatarsal'),
+  R('nav','Bone tenderness at navicular'),
+  H('Weight bearing'),
+  R('wb','Unable to bear weight (4 steps) both immediately AND in ED')
+],
+calc(c){
+  const v=c.v;
+  const ankle = v.mal && (v.lat||v.med||v.wb);
+  const foot  = v.mid && (v.mt5||v.nav||v.wb);
+  if(!v.mal && !v.mid) return {score:'—',tier:'n',label:'Select pain zone',interp:'The rule applies only when there is pain in the malleolar and/or midfoot zone.',next:''};
+  if(ankle||foot){
+    const which=[ankle?'ankle':'',foot?'foot':''].filter(Boolean).join(' + ');
+    return {score:'X-ray',tier:'a',label:'X-ray '+which,interp:'Ottawa criteria positive for '+which+' series.',next:'<b>'+which.charAt(0).toUpperCase()+which.slice(1)+' X-ray</b>.'+(ankle&&!foot&&v.mid?' Foot series not needed.':'')+(foot&&!ankle&&v.mal?' Ankle series not needed.':'')};
+  }
+  return {score:'No',tier:'g',label:'No X-ray needed',interp:'Ottawa criteria negative.',next:'<b>No radiography</b>. Treat as sprain (RICE, early mobilisation). Return if unable to bear weight or no improvement in 5–7 days.'};
+},
+pit:['Sensitivity ≈98–99% (Bachmann 2003 meta-analysis). Also reliable in children >5 y.','Exclusions: intoxication, head injury, multiple painful injuries, reduced sensation, pregnancy, >10 days since injury, re-evaluation.','Weight bearing means 4 steps (limping counts as able).'],
+ref:'Stiell IG et al. Ann Emerg Med 1992;21:384–90. Refined: Stiell IG et al. JAMA 1993;269:1127–32.'},
+
+{id:'ottknee',name:'Ottawa Knee Rule',cat:'msk',desc:'X-ray need after acute knee injury',kw:'ottawa knee x-ray fracture',
+fields:[
+  R('age','Age ≥55'),
+  R('pat','Isolated tenderness of the patella','No other bony tenderness of the knee'),
+  R('fib','Tenderness at head of fibula'),
+  R('flex','Unable to flex knee to 90°'),
+  R('wb','Unable to bear weight (4 steps) both immediately AND in ED')
+],
+calc(c){
+  const n=c.count(['age','pat','fib','flex','wb']);
+  if(n) return {score:'X-ray',tier:'a',label:'X-ray indicated',interp:n+' criterion/criteria present.',next:'<b>Knee X-ray</b> series.'};
+  return {score:'No',tier:'g',label:'No X-ray needed',interp:'Ottawa Knee negative.',next:'<b>No radiography</b>. Consider soft-tissue injury (ligament/meniscus): RICE, follow-up.'};
+},
+pit:['Derived in adults (≥18). Also validated in children ≥5 y in some studies.','Exclusions: injury >7 days old, isolated skin injury, re-evaluation, altered consciousness, paraplegia, multiple injuries.','Sensitivity ≈98–100% for fracture.'],
+ref:'Stiell IG et al. Ann Emerg Med 1995;26:405–13. Validation: Stiell IG et al. JAMA 1996;275:611–5.'},
+
+/* ---------------- LABS / FORMULAS ---------------- */
+{id:'ag',name:'Anion Gap + Delta-Delta',cat:'labs',desc:'AG, albumin-corrected AG, delta ratio',kw:'anion gap delta delta ratio hagma nagma acidosis metabolic',
+fields:[
+  NUM('na','Sodium (Na⁺)',U.lyte.u),
+  NUM('cl','Chloride (Cl⁻)',U.lyte.u),
+  NUM('hco3','Bicarbonate (HCO₃⁻)',U.lyte.u),
+  NUM('alb','Albumin (optional)',U.alb.u,{f:U.alb.f,dp:U.alb.dp,sub:'For albumin-corrected AG'}),
+  NUM('nag','Normal AG (your lab)',U.lyte.u,{def:12,sub:'Default 12 (without K⁺)'}),
+  NUM('nhc','Normal HCO₃⁻',U.lyte.u,{def:24})
+],
+calc(c){
+  const na=c.n('na'),cl=c.n('cl'),hc=c.n('hco3'),alb=c.n('alb');
+  const nag=isNaN(c.n('nag'))?12:c.n('nag'), nhc=isNaN(c.n('nhc'))?24:c.n('nhc');
+  if([na,cl,hc].some(isNaN)) return c.inc('Enter Na, Cl and HCO₃');
+  const ag=na-(cl+hc);
+  const cag = isNaN(alb)?null: ag+0.25*(40-alb);   // 2.5 per 1 g/dL = 0.25 per g/L
+  const useAG = cag!==null?cag:ag;
+  let rows='<div>Anion gap</div><div>'+fmt(ag,1)+'</div>';
+  if(cag!==null) rows+='<div>Albumin-corrected AG</div><div>'+fmt(cag,1)+'</div>';
+  let dd='', ddtxt='';
+  if(useAG>nag && hc<nhc){
+    const r=(useAG-nag)/(nhc-hc);
+    rows+='<div>Delta ratio (ΔAG/ΔHCO₃)</div><div>'+fmt(r,2)+'</div>';
+    if(r<0.4) ddtxt='<0.4: <b>hyperchloraemic normal-AG acidosis</b> predominates.';
+    else if(r<0.8) ddtxt='0.4–0.8: <b>mixed high-AG + normal-AG acidosis</b> (or renal failure).';
+    else if(r<=2) ddtxt='0.8–2.0: <b>pure high-AG acidosis</b> (lactic acidosis ≈1.6. DKA often ≈1 from urinary ketone loss).';
+    else ddtxt='>2.0: high-AG acidosis <b>+ concurrent metabolic alkalosis</b> (or pre-existing compensated respiratory acidosis).';
+    dd='<p>'+ddtxt+'</p>';
+  }
+  const extra='<div class="kv">'+rows+'</div>'+dd;
+  if(useAG>nag) return {score:fmt(useAG,1),of:'',tier:'r',label:'High anion gap'+(cag!==null?' (albumin-corrected)':''),interp:'AG above the normal value of '+nag+'.',next:'Work up <b>HAGMA</b> (GOLDMARK: glycols, oxoproline, L-/D-lactate, methanol, aspirin, renal failure, ketoacidosis): lactate, ketones, creatinine, osmolar gap, salicylate, VBG.',extra};
+  if(useAG<4) return {score:fmt(useAG,1),of:'',tier:'a',label:'Low anion gap',interp:'Consider hypoalbuminaemia, lab error, paraproteinaemia (myeloma), lithium/bromide toxicity.',next:'Repeat the sample and check albumin.',extra};
+  return {score:fmt(useAG,1),of:'',tier:'g',label:'Normal anion gap',interp:hc<nhc?'Low HCO₃ with normal AG suggests a <b>normal-AG (hyperchloraemic) acidosis</b>.':'Normal AG.',next:hc<nhc?'Consider GI loss (diarrhoea), RTA, saline load, ureteral diversion. Check urine AG.':'—',extra};
+},
+pit:['Hypoalbuminaemia hides a raised AG: correct for albumin (+2.5 per 1 g/dL fall below 4 g/dL).','Normal AG range is assay-dependent (modern ion-selective electrodes ≈ 3–11). Set your lab value.','Delta ratio is a guide, not a diagnosis. Interpret it with the clinical picture and a blood gas.'],
+ref:'Emmett M, Narins RG. Medicine 1977;56:38–54. Albumin correction: Figge J et al. Crit Care Med 1998;26:1807–10. Delta gap: Wrenn K. Ann Emerg Med 1990;19:1310–3.'},
+
+{id:'corrna',name:'Corrected Sodium',cat:'labs',desc:'Na⁺ corrected for hyperglycaemia',kw:'corrected sodium hyperglycemia pseudohyponatremia dka hhs',
+fields:[
+  NUM('na','Measured sodium',U.lyte.u),
+  NUM('glu','Glucose',U.glu.u,{f:U.glu.f,dp:U.glu.dp})
+],
+calc(c){
+  const na=c.n('na'), g=c.n('glu');
+  if(isNaN(na)||isNaN(g)) return c.inc('Enter Na and glucose');
+  const gmg=g*18.016, ex=Math.max(0,gmg-100)/100;
+  const katz=na+1.6*ex, hill=na+2.4*ex;
+  const extra='<div class="kv"><div>Katz (1.6 per 100 mg/dL)</div><div>'+fmt(katz,1)+'</div><div>Hillier (2.4 per 100 mg/dL)</div><div>'+fmt(hill,1)+'</div></div><p style="font-size:13px;color:var(--mu)">100 mg/dL glucose ≈ 5.55 mmol/L.</p>';
+  const v=hill;
+  if(v<135) return {score:fmt(v,1),of:'',tier:'a',label:'True hyponatraemia',interp:'Corrected Na is low even after accounting for glucose (hypotonic).',next:'Assess volume status, serum/urine osmolality, urine Na. Correct slowly (≤8–10 mmol/L per 24 h).',extra};
+  if(v>145) return {score:fmt(v,1),of:'',tier:'r',label:'Hypernatraemia (corrected)',interp:'Significant free-water deficit (common in HHS).',next:'Calculate the free-water deficit. Correct gradually. In DKA/HHS, watch the trend as glucose falls.',extra};
+  return {score:fmt(v,1),of:'',tier:'g',label:'Normal corrected Na',interp:'Low measured Na is explained by hyperglycaemia (translocational).',next:'Treat the hyperglycaemia. Corrected Na should stay stable or rise slightly during DKA treatment.',extra};
+},
+pit:['Hillier (2.4) is more accurate, especially at glucose >400 mg/dL (22 mmol/L). Katz (1.6) is the classic factor. Both are shown, and the result uses Hillier.','A falling corrected Na during DKA treatment (especially in children) is a cerebral oedema risk marker.','Rule out pseudohyponatraemia (lipids, paraproteins) with direct ISE / blood gas Na.'],
+ref:'Katz MA. N Engl J Med 1973;289:843–4. Hillier TA et al. Am J Med 1999;106:399–403.'},
+
+{id:'corrca',name:'Corrected Calcium',cat:'labs',desc:'Total Ca²⁺ corrected for albumin',kw:'corrected calcium albumin hypocalcemia hypercalcemia',
+fields:[
+  NUM('ca','Total calcium',U.ca.u,{f:U.ca.f,dp:U.ca.dp}),
+  NUM('alb','Albumin',U.alb.u,{f:U.alb.f,dp:U.alb.dp})
+],
+calc(c){
+  const ca=c.n('ca'), alb=c.n('alb');
+  if(isNaN(ca)||isNaN(alb)) return c.inc('Enter calcium and albumin');
+  const cc=ca+0.02*(40-alb);  // mmol/L
+  const show = UNIT==='si' ? fmt(cc,2) : fmt(cc*4.008,1);
+  const un = UNIT==='si'?'mmol/L':'mg/dL';
+  const extra='<div class="kv"><div>Corrected Ca</div><div>'+show+' '+un+'</div><div>Formula</div><div>'+(UNIT==='si'?'Ca + 0.02 × (40 − alb g/L)':'Ca + 0.8 × (4 − alb g/dL)')+'</div></div>';
+  if(cc>=3.5) return {score:show,of:un,tier:'r',label:'Severe hypercalcaemia',interp:'≥3.5 mmol/L (≥14 mg/dL).',next:'<b>IV 0.9% saline</b>, IV bisphosphonate ± calcitonin. ECG. Look for malignancy/hyperparathyroidism.',extra};
+  if(cc>2.6) return {score:show,of:un,tier:'a',label:'Hypercalcaemia',interp:'Above ≈2.6 mmol/L (10.5 mg/dL).',next:'Check PTH, ionised Ca, renal function. Hydrate if symptomatic or >3.0 mmol/L (12 mg/dL).',extra};
+  if(cc<1.9) return {score:show,of:un,tier:'r',label:'Severe hypocalcaemia',interp:'<1.9 mmol/L (<7.6 mg/dL).',next:'ECG (QT), confirm with <b>ionised Ca</b>. IV calcium gluconate if symptomatic. Check Mg.',extra};
+  if(cc<2.1) return {score:show,of:un,tier:'a',label:'Hypocalcaemia',interp:'Below ≈2.1 mmol/L (8.5 mg/dL).',next:'Confirm with ionised Ca. Check Mg, PTH, vitamin D, renal function.',extra};
+  return {score:show,of:un,tier:'g',label:'Normal corrected Ca',interp:'≈2.1–2.6 mmol/L (8.5–10.5 mg/dL).',next:'—',extra};
+},
+pit:['Correction formulas are inaccurate (especially in critical illness, CKD, hypoalbuminaemia). <b>Measure ionised Ca</b> when it matters.','Reference ranges are lab-specific.'],
+ref:'Payne RB et al. Br Med J 1973;4:643–6.'},
+
+{id:'map',name:'Mean Arterial Pressure',cat:'labs',desc:'MAP from SBP/DBP',kw:'map mean arterial pressure blood pressure perfusion',
+fields:[ NUM('s','Systolic BP','mmHg'), NUM('d','Diastolic BP','mmHg') ],
+calc(c){
+  const s=c.n('s'), d=c.n('d');
+  if(isNaN(s)||isNaN(d)) return c.inc('Enter SBP and DBP');
+  const m=d+(s-d)/3;
+  if(m<65) return {score:fmt(m,0),of:'mmHg',tier:'r',label:'MAP <65: hypoperfusion risk',interp:'Below the usual shock resuscitation target.',next:'Treat the cause of shock: fluids, then <b>vasopressors (noradrenaline)</b> to MAP ≥65 (SSC 2021).'};
+  if(m>110) return {score:fmt(m,0),of:'mmHg',tier:'a',label:'Elevated MAP',interp:'Marked hypertension.',next:'Look for end-organ damage (hypertensive emergency) before treating.'};
+  return {score:fmt(m,0),of:'mmHg',tier:'g',label:'MAP in target range',interp:'MAP 65–110 mmHg.',next:'—'};
+},
+pit:['Estimation (DBP + ⅓ pulse pressure) is less accurate at high heart rates. An arterial line measures MAP directly.','Higher targets may be needed in chronic hypertension, TBI (CPP) or spinal cord injury (MAP 85–90).'],
+ref:'MAP ≥65 mmHg target: Evans L et al. Surviving Sepsis Campaign. Crit Care Med 2021;49:e1063–e1143.'},
+
+{id:'aa',name:'A–a Gradient',cat:'labs',desc:'Alveolar–arterial O₂ gradient + P/F ratio',kw:'a-a gradient alveolar arterial oxygen abg pf ratio hypoxemia',
+fields:[
+  NUM('fio2','FiO₂','%',{def:21}),
+  NUM('pao2','PaO₂',U.kpa.u,{f:U.kpa.f,dp:U.kpa.dp}),
+  NUM('paco2','PaCO₂',U.kpa.u,{f:U.kpa.f,dp:U.kpa.dp}),
+  NUM('age','Age','years'),
+  NUM('patm','Barometric pressure',U.kpa.u,{f:U.kpa.f,dp:U.kpa.dp,def:101.3,sub:'Sea level 101.3 kPa / 760 mmHg'})
+],
+calc(c){
+  const fi=c.n('fio2')/100, pa=c.n('pao2')*KPA, pc=c.n('paco2')*KPA, age=c.n('age');
+  const pb=isNaN(c.n('patm'))?760:c.n('patm')*KPA;
+  if([fi,pa,pc].some(isNaN)) return c.inc('Enter FiO₂, PaO₂, PaCO₂');
+  const PAO2=fi*(pb-47)-pc/0.8, grad=PAO2-pa, pf=pa/fi;
+  const exp = isNaN(age)? null : age/4+4;
+  const cv = x=> UNIT==='si'? fmt(x/KPA,1) : fmt(x,0);
+  const un = UNIT==='si'?'kPa':'mmHg';
+  let pft = pf>300?'>300 (normal–mild)':pf>200?'201–300 (mild ARDS range)':pf>100?'101–200 (moderate)':'≤100 (severe)';
+  const extra='<div class="kv"><div>PAO₂ (alveolar)</div><div>'+cv(PAO2)+' '+un+'</div><div>A–a gradient</div><div>'+cv(grad)+' '+un+'</div>'+(exp!==null?'<div>Expected (age/4 + 4)</div><div>≤'+cv(exp)+' '+un+'</div>':'')+'<div>P/F ratio (mmHg)</div><div>'+fmt(pf,0)+'</div><div>Berlin ARDS band*</div><div>'+pft+'</div></div><p style="font-size:12px;color:var(--mu)">*Berlin bands need PEEP ≥5 and other ARDS criteria.</p>';
+  const lim = exp!==null?exp:15;
+  if(grad>lim) return {score:cv(grad),of:un,tier:'r',label:'Elevated A–a gradient',interp:'Above the expected value'+(exp===null?' (≈15 mmHg used: enter age for an age-adjusted value)':'')+'.',next:'Suggests <b>V/Q mismatch, shunt or diffusion defect</b> (PE, pneumonia, ARDS, oedema, ILD). Image and treat the cause.',extra};
+  return {score:cv(grad),of:un,tier:'g',label:'Normal A–a gradient',interp:'Within the expected range.',next:'Any hypoxaemia is from <b>hypoventilation</b> (opioids, neuromuscular, CNS) or <b>low inspired O₂</b> (altitude).',extra};
+},
+pit:['Normal values apply on room air. The gradient rises with FiO₂, so it is less interpretable on supplemental O₂.','Assumes RQ 0.8 and PH₂O 47 mmHg (6.3 kPa) at 37 °C.','Expected value (age/4 + 4 mmHg) is a rule of thumb. Other formulas exist.'],
+ref:'Alveolar gas equation (Riley RL, Cournand A. J Appl Physiol 1949). Age norms: Mellemgaard K. Acta Physiol Scand 1966;67:10–20.'},
+
+{id:'parkland',name:'Parkland Formula',cat:'labs',desc:'24-h burn fluid resuscitation',kw:'parkland burns fluid resuscitation tbsa baxter',
+fields:[
+  NUM('wt','Weight','kg'),
+  NUM('tbsa','%TBSA burned','%',{sub:'Partial + full thickness only (exclude superficial/1st degree)'}),
+  NUM('hrs','Hours since burn (optional)','h',{sub:'Time is counted from the burn, not from arrival'}),
+  NUM('given','Fluid already given (optional)','mL')
+],
+calc(c){
+  const w=c.n('wt'), t=c.n('tbsa'), h=c.n('hrs'), g=c.n('given');
+  if(isNaN(w)||isNaN(t)) return c.inc('Enter weight and %TBSA');
+  const tot=4*w*t, half=tot/2;
+  let rows='<div>Total 24 h (LR)</div><div>'+Math.round(tot)+' mL</div><div>First 8 h</div><div>'+Math.round(half)+' mL ('+Math.round(half/8)+' mL/h)</div><div>Next 16 h</div><div>'+Math.round(half)+' mL ('+Math.round(half/16)+' mL/h)</div>';
+  if(!isNaN(h) && h<8){
+    const rem=Math.max(0,half-(isNaN(g)?0:g)), rate=rem/(8-h);
+    rows+='<div>Adjusted rate to hour 8</div><div>'+Math.round(rate)+' mL/h</div>';
+  }
+  const extra='<div class="kv">'+rows+'</div><p>Titrate to urine output: adults <b>0.5 mL/kg/h</b> (≈'+Math.round(0.5*w)+' mL/h). Children <30 kg <b>1 mL/kg/h</b>.</p>';
+  const small = t<20;
+  return {score:Math.round(tot),of:'mL/24h',tier:small?'a':'i',label:small?'TBSA <20%: formula often not needed':'Lactated Ringer\'s, 24 h',interp:'4 mL × '+fmt(w,1)+' kg × '+fmt(t,0)+'% TBSA.',next:small?'Formula resuscitation is usually for ≥20% TBSA (adults) / ≥10–15% (children). Encourage oral fluids where appropriate.':'Give half in the first 8 h from burn time, the rest over 16 h. <b>Titrate to urine output</b>, not to the formula. Refer to a burns centre.',extra};
+},
+pit:['A starting estimate only. Over-resuscitation ("fluid creep") causes compartment syndromes. ABA guidance suggests starting at 2–4 mL/kg/%TBSA.','Children also need maintenance fluids with dextrose. Inhalation or electrical injury raises requirements.','Estimate TBSA with the rule of 9s (Lund–Browder in children) or the palm method (≈1%).'],
+ref:'Baxter CR, Shires T. Ann N Y Acad Sci 1968;150:874–94.'},
+
+{id:'si',name:'Shock Index',cat:'labs',desc:'HR / SBP: occult shock screen',kw:'shock index hemorrhage trauma sepsis',
+fields:[ NUM('hr','Heart rate','bpm'), NUM('sbp','Systolic BP','mmHg') ],
+calc(c){
+  const hr=c.n('hr'), s=c.n('sbp');
+  if(isNaN(hr)||!(s>0)) return c.inc('Enter HR and SBP');
+  const x=hr/s;
+  if(x>=1) return {score:fmt(x,2),of:'',tier:'r',label:'Shock index ≥1.0',interp:'Associated with transfusion/massive transfusion need, ICU admission and mortality (trauma, sepsis, GI bleed).',next:'Treat as <b>shock until proven otherwise</b>: large-bore access, labs + crossmatch, early blood products/fluids, find the source.'};
+  if(x>=0.7) return {score:fmt(x,2),of:'',tier:'a',label:'Borderline (0.7–0.99)',interp:'Above normal (0.5–0.7). May indicate early or compensated shock.',next:'Reassess often. Check lactate. Look for bleeding or sepsis.'};
+  return {score:fmt(x,2),of:'',tier:'g',label:'Normal (<0.7)',interp:'Normal range ≈0.5–0.7.',next:'—'};
+},
+pit:['Thresholds are conventions (0.7 / 0.9 / 1.0 are used in different studies), not a single validated cut-off.','Beta-blockers, pacemakers, elderly patients and athletes can mask a raised SI. Normal SI is higher in pregnancy (≈0.7–0.9).'],
+ref:'Allgöwer M, Burri C. Dtsch Med Wochenschr 1967;92:1947–50.'}
+
+];
+
+/* fix T() calls where sub was passed in the 3rd slot */
+CALCS.forEach(cl=>cl.fields.forEach(f=>{ if(f.t==='tog' && typeof f.p==='string'){ const s=f.p; f.p=f.sub; f.sub=s; } }));
+
+/* ============================================================
+   ENGINE
+   ============================================================ */
+const vis = (f,v)=> f.show ? !!f.show(v) : true;
+function fieldsOf(cl){ return cl.fields.filter(f=>f.id); }
+function initState(cl){
+  const v={};
+  cl.fields.forEach(f=>{
+    if(f.t==='tog') v[f.id]=false;
+    else if(f.t==='num') v[f.id]= f.def!=null ? String(toUnit(f,f.def)) : '';
+  });
+  return v;
+}
+function toUnit(f,siVal){ if(UNIT==='conv'&&f.f) return +(siVal*f.f).toFixed(f.dp?f.dp.conv:2); return siVal; }
+function getState(cl){ return STATE[cl.id] || (STATE[cl.id]=initState(cl)); }
+
+function mkCtx(cl,v){
+  const byId={}; cl.fields.forEach(f=>{ if(f.id) byId[f.id]=f; });
+  return {
+    v, u:UNIT,
+    p(id){ const f=byId[id]; if(v[id]==null) return undefined; return f.o[v[id]][1]; },
+    pts(){ let s=0; cl.fields.forEach(f=>{ if(!f.id||!vis(f,v)) return;
+      if(f.t==='tog'&&v[f.id]) s+=(f.p||0);
+      if(f.t==='sel'&&v[f.id]!=null){ const p=f.o[v[f.id]][1]; if(typeof p==='number') s+=p; } }); return s; },
+    count(ids){ return ids.filter(id=>v[id] && vis(byId[id],v)).length; },
+    all(){ return cl.fields.every(f=> f.t!=='sel' || !vis(f,v) || f.opt || v[f.id]!=null); },
+    answered(){ return cl.fields.filter(f=>f.t==='sel'&&vis(f,v)&&v[f.id]!=null).length; },
+    n(id){ const f=byId[id], raw=v[id]; if(raw===''||raw==null) return NaN; let x=parseFloat(String(raw).replace(',','.')); if(isNaN(x)) return NaN; if(UNIT==='conv'&&f.f) x=x/f.f; return x; },
+    inc(msg){ return {score:'—',tier:'n',label:msg||'Incomplete',interp:msg||'Complete the required inputs.',next:''}; }
+  };
+}
+function compute(cl){ const v=getState(cl); return cl.calc(mkCtx(cl,v)); }
+
+function setUnit(u){
+  if(u===UNIT) return;
+  // convert any entered numeric values
+  CALCS.forEach(cl=>{ const v=STATE[cl.id]; if(!v) return;
+    cl.fields.forEach(f=>{ if(f.t==='num'&&f.f&&v[f.id]!==''&&v[f.id]!=null){
+      const x=parseFloat(String(v[f.id]).replace(',','.')); if(isNaN(x)) return;
+      v[f.id]= String(u==='conv' ? +(x*f.f).toFixed(f.dp.conv) : +(x/f.f).toFixed(f.dp.si));
+    }});
+  });
+  UNIT=u;
+}
+
+/* ============================================================
+   UI
+   ============================================================ */
+if(typeof document!=='undefined'){
+  let tab='all', query='', fromList=false;
+  const app=document.getElementById('app');
+  const esc=s=>String(s).replace(/[&<>"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
+  const L=f=> typeof f.l==='function'?f.l(UNIT):f.l;
+  const unitOf=f=> f.u&&typeof f.u==='object'?f.u[UNIT]:(f.u||'');
+  const catName=id=>(CATS.find(c=>c[0]===id)||['',''])[1];
+
+  function headerHTML(){
+    const dark=document.documentElement.dataset.theme!=='light';
+    return '<header class="top"><div class="wrap"><div class="row">'+
+      '<div class="brand">ED Bedside Calc<small>Offline · nothing stored</small></div>'+
+      '<div class="seg" role="group" aria-label="Units"><button data-unit="si" aria-pressed="'+(UNIT==='si')+'">SI</button><button data-unit="conv" aria-pressed="'+(UNIT==='conv')+'">Conv</button></div>'+
+      '<button class="icbtn" id="theme" aria-label="Toggle light/dark">'+(dark?'☀':'☾')+'</button></div>';
+  }
+  const footer='<footer><b>Clinical decision support only — does not replace clinical judgment.</b><br>Verify doses and thresholds against local protocols. No data is stored or transmitted.</footer>';
+
+  function renderList(){
+    document.body.classList.remove('calc');
+    app.innerHTML=headerHTML()+
+      '<input class="search" id="q" type="search" placeholder="Search calculators (e.g. PE, GCS, gap)…" autocomplete="off" value="'+esc(query)+'">'+
+      '<div class="tabs" role="group" aria-label="Categories">'+CATS.map(c=>'<button data-tab="'+c[0]+'" aria-pressed="'+(tab===c[0])+'">'+c[1]+'</button>').join('')+'</div>'+
+      '</div></header><main class="wrap"><ul class="list" id="list">'+listItems()+'</ul></main>'+footer;
+  }
+  function listItems(){
+    const q=query.trim().toLowerCase();
+    const items=CALCS.filter(cl=>(tab==='all'||cl.cat===tab) && (!q || (cl.name+' '+cl.desc+' '+cl.kw+' '+catName(cl.cat)).toLowerCase().includes(q)));
+    return items.length? items.map(cl=>'<li><button data-open="'+cl.id+'"><div><div class="nm">'+cl.name+'</div><div class="ds">'+cl.desc+'</div></div><span class="ct">'+catName(cl.cat)+'</span></button></li>').join('') : '<li class="empty">No matching calculators</li>';
+  }
+
+  function fieldHTML(cl,f,i,v){
+    const hid = vis(f,v)?'':' hide';
+    if(f.t==='hdr') return '<div class="hdr'+hid+'" data-fi="'+i+'">'+f.l+'</div>';
+    if(f.t==='tog'){
+      const pt = f.p!=null ? '<span class="pt">'+fmtP(f.p)+'</span>' : '';
+      return '<button class="tog'+hid+'" data-fi="'+i+'" data-tog="'+f.id+'" aria-pressed="'+!!v[f.id]+'"><span class="tl"><b>'+L(f)+'</b>'+(f.sub?'<span>'+f.sub+'</span>':'')+'</span>'+pt+'<span class="sw" aria-hidden="true"></span></button>';
+    }
+    if(f.t==='sel'){
+      const short=f.o.every(o=>o[0].length<=12);
+      const showPts=f.o.some(o=>typeof o[1]==='number') && !['rot'].includes(f.id) && cl.id!=='pecarn';
+      return '<div class="sel'+hid+'" data-fi="'+i+'" role="group" aria-label="'+esc(L(f))+'"><div class="sl">'+L(f)+'</div>'+(f.sub?'<div class="ss">'+f.sub+'</div>':'')+
+        '<div class="opts'+(short?' grid':'')+'">'+f.o.map((o,j)=>'<button data-sel="'+f.id+'" data-j="'+j+'" aria-pressed="'+(v[f.id]===j)+'"><span>'+o[0]+'</span>'+(showPts&&o[1]!==null?'<span class="op">'+(typeof o[1]==='number'?fmtP(o[1]):o[1])+'</span>':'')+'</button>').join('')+'</div></div>';
+    }
+    if(f.t==='num'){
+      return '<div class="num'+hid+'" data-fi="'+i+'"><label for="n_'+f.id+'">'+L(f)+(f.sub?'<span>'+f.sub+'</span>':'')+'</label><div class="ib"><input id="n_'+f.id+'" data-num="'+f.id+'" type="text" inputmode="decimal" autocomplete="off" enterkeyhint="next" value="'+esc(v[f.id]??'')+'"><span class="un">'+unitOf(f)+'</span></div></div>';
+    }
+    return '';
+  }
+
+  function renderCalc(cl){
+    document.body.classList.add('calc');
+    const v=getState(cl);
+    app.innerHTML=headerHTML()+
+      '<div class="chead" style="margin-top:8px"><button class="icbtn" id="back" aria-label="Back">‹ Back</button><h1>'+cl.name+'</h1><button class="icbtn reset" id="reset">Reset</button></div>'+
+      '</div></header><main class="wrap"><div class="fields" id="fields">'+cl.fields.map((f,i)=>fieldHTML(cl,f,i,v)).join('')+'</div>'+
+      '<section class="detail" id="detail" aria-live="polite"></section>'+
+      '<div class="box"><h2>⚠ Pitfalls & exclusions</h2>'+ul(cl.pit)+'</div>'+
+      '<div class="box ref"><h2>Reference</h2><p>'+cl.ref+'</p></div>'+
+      '</main>'+footer+
+      '<div class="rbar"><button class="in" id="rbar" aria-label="Show interpretation"></button></div>';
+    updateResult(cl);
+  }
+
+  function updateResult(cl){
+    const v=getState(cl);
+    // visibility
+    cl.fields.forEach((f,i)=>{ const el=app.querySelector('[data-fi="'+i+'"]'); if(el) el.classList.toggle('hide',!vis(f,v)); });
+    const r=compute(cl);
+    const of = r.of!==undefined && r.of!=='' ? '<small>'+(typeof r.of==='number'?'/'+r.of:' '+r.of)+'</small>' : '';
+    const nextPlain=(r.next||r.interp||'').replace(/<[^>]+>/g,'');
+    const bar=document.getElementById('rbar');
+    bar.className='in t-'+r.tier;
+    bar.innerHTML='<div class="sc">'+r.score+of+'</div><div class="lb"><b class="tt">'+r.label+'</b><span>'+nextPlain+'</span></div><div class="chev">⌄</div>';
+    const d=document.getElementById('detail');
+    d.className='detail t-'+r.tier;
+    d.innerHTML='<div class="tt">'+r.score+(of?' '+of:'')+' · '+r.label+'</div>'+(r.interp?'<p>'+r.interp+'</p>':'')+(r.next&&r.next!=='—'?'<div class="nx"><b>Next step:</b> '+r.next+'</div>':'')+(r.extra||'');
+  }
+
+  function current(){ const id=location.hash.slice(1); return CALCS.find(c=>c.id===id); }
+  function route(){ const cl=current(); if(cl){ renderCalc(cl); window.scrollTo(0,0);} else renderList(); }
+
+  app.addEventListener('click',e=>{
+    const b=e.target.closest('button'); if(!b) return;
+    const cl=current();
+    if(b.dataset.unit){ setUnit(b.dataset.unit); cl?renderCalc(cl):renderList(); return; }
+    if(b.id==='theme'){ const r=document.documentElement; r.dataset.theme = r.dataset.theme==='light'?'dark':'light';
+      document.querySelector('meta[name=theme-color]').content = r.dataset.theme==='light'?'#f3f5f8':'#0b0f14'; b.textContent=r.dataset.theme==='light'?'☾':'☀'; return; }
+    if(b.dataset.tab){ tab=b.dataset.tab; renderList(); return; }
+    if(b.dataset.open){ fromList=true; location.hash=b.dataset.open; return; }
+    if(b.id==='back'){ if(fromList){ fromList=false; history.back(); } else location.hash=''; return; }
+    if(!cl) return;
+    const v=getState(cl);
+    if(b.id==='reset'){ STATE[cl.id]=initState(cl); renderCalc(cl); return; }
+    if(b.id==='rbar'){ document.getElementById('detail').scrollIntoView({behavior:'smooth',block:'start'}); return; }
+    if(b.dataset.tog){ v[b.dataset.tog]=!v[b.dataset.tog]; b.setAttribute('aria-pressed',v[b.dataset.tog]); updateResult(cl); return; }
+    if(b.dataset.sel){ const id=b.dataset.sel, j=+b.dataset.j; v[id]= v[id]===j? undefined : j;
+      b.parentNode.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed', +x.dataset.j===v[id]));
+      updateResult(cl); return; }
+  });
+  app.addEventListener('input',e=>{
+    const t=e.target;
+    if(t.id==='q'){ query=t.value; document.getElementById('list').innerHTML=listItems(); return; }
+    if(t.dataset.num){ const cl=current(); if(!cl) return; getState(cl)[t.dataset.num]=t.value; updateResult(cl); }
+  });
+  app.addEventListener('keydown',e=>{
+    if(e.key==='Enter' && e.target.dataset && e.target.dataset.num){
+      const ins=[...app.querySelectorAll('input[data-num]')].filter(x=>x.offsetParent); const i=ins.indexOf(e.target);
+      if(ins[i+1]) ins[i+1].focus(); else e.target.blur(); e.preventDefault();
+    }
+  });
+  window.addEventListener('hashchange',()=>{ if(!current()) fromList=false; route(); });
+  route();
+}
+</script>
+</body>
+</html>
